@@ -416,6 +416,7 @@ function handleFileDrop(e, type) {
             document.getElementById('frequency-editor').value = content;
             currentFrequency = content;
             syncFrequencyToUI();
+            debounceSaveFrequency();
             showToast(`已加载: ${file.name}`, 'success');
         }
     };
@@ -658,6 +659,7 @@ window.confirmLoadConfig = async function() {
                 currentFrequency = text;
                 currentFrequencyData = null;
                 updateBackdrop('frequency-editor', 'frequency-backdrop');
+                debounceSaveFrequency();
                 syncFrequencyToUI();
             }
         }
@@ -2058,6 +2060,7 @@ function renderFrequencyPanel(data) {
                         currentFrequencyData = parseFrequencyText(currentFrequency);
                         document.getElementById('frequency-editor').value = currentFrequency;
                         updateBackdrop('frequency-editor', 'frequency-backdrop');
+                        debounceSaveFrequency();
 
                         // 重新渲染
                         renderFrequencyPanel(currentFrequencyData);
@@ -2077,6 +2080,7 @@ window.handleGlobalFilterInput = function(event) {
         currentFrequencyData = data;
         document.getElementById('frequency-editor').value = currentFrequency;
     updateBackdrop('frequency-editor', 'frequency-backdrop');
+    debounceSaveFrequency();
         renderFrequencyPanel(data);
     }
 }
@@ -2088,6 +2092,7 @@ window.removeGlobalFilter = function(filter) {
     currentFrequencyData = data;
     document.getElementById('frequency-editor').value = currentFrequency;
     updateBackdrop('frequency-editor', 'frequency-backdrop');
+    debounceSaveFrequency();
     renderFrequencyPanel(data);
 }
 
@@ -2141,6 +2146,7 @@ window.confirmAddWordGroup = function(type) {
     currentFrequencyData = data;
     document.getElementById('frequency-editor').value = currentFrequency;
     updateBackdrop('frequency-editor', 'frequency-backdrop');
+    debounceSaveFrequency();
     renderFrequencyPanel(data);
 
     closeWordGroupTypeModal();
@@ -2170,6 +2176,7 @@ window.removeWordGroup = function(index) {
     currentFrequencyData = parseFrequencyText(currentFrequency);
     document.getElementById('frequency-editor').value = currentFrequency;
     updateBackdrop('frequency-editor', 'frequency-backdrop');
+    debounceSaveFrequency();
     renderFrequencyPanel(currentFrequencyData);
 }
 
@@ -2187,6 +2194,7 @@ window.updateGroupName = function(index, name) {
     currentFrequencyData = parseFrequencyText(currentFrequency);
     document.getElementById('frequency-editor').value = currentFrequency;
     updateBackdrop('frequency-editor', 'frequency-backdrop');
+    debounceSaveFrequency();
     renderFrequencyPanel(currentFrequencyData);
 }
 
@@ -2219,6 +2227,7 @@ window.editKeyword = function(groupIndex, oldKeyword, spanElement) {
             currentFrequencyData = parseFrequencyText(currentFrequency);
             document.getElementById('frequency-editor').value = currentFrequency;
     updateBackdrop('frequency-editor', 'frequency-backdrop');
+    debounceSaveFrequency();
             renderFrequencyPanel(currentFrequencyData);
         } else {
             spanElement.style.display = '';
@@ -2257,6 +2266,7 @@ window.handleKeywordInput = function(event, groupIndex) {
             currentFrequencyData = parseFrequencyText(currentFrequency);
             document.getElementById('frequency-editor').value = currentFrequency;
     updateBackdrop('frequency-editor', 'frequency-backdrop');
+    debounceSaveFrequency();
             renderFrequencyPanel(currentFrequencyData);
         }
     }
@@ -2280,6 +2290,7 @@ window.removeKeyword = function(groupIndex, keyword) {
         currentFrequencyData = parseFrequencyText(currentFrequency);
         document.getElementById('frequency-editor').value = currentFrequency;
     updateBackdrop('frequency-editor', 'frequency-backdrop');
+    debounceSaveFrequency();
         renderFrequencyPanel(currentFrequencyData);
     }
 }
@@ -2298,6 +2309,7 @@ window.updateAliasItem = function(groupIndex, itemIndex, field, value) {
             currentFrequencyData = parseFrequencyText(currentFrequency);
             document.getElementById('frequency-editor').value = currentFrequency;
             updateBackdrop('frequency-editor', 'frequency-backdrop');
+            debounceSaveFrequency();
             renderFrequencyPanel(currentFrequencyData);
         }
     }
@@ -2317,6 +2329,7 @@ window.addAliasItem = function(groupIndex) {
         currentFrequencyData = parseFrequencyText(currentFrequency);
         document.getElementById('frequency-editor').value = currentFrequency;
     updateBackdrop('frequency-editor', 'frequency-backdrop');
+    debounceSaveFrequency();
         renderFrequencyPanel(currentFrequencyData);
     } else if (group.type === 'alias') {
         // 如果是单个别名，升级为别名组
@@ -2328,6 +2341,7 @@ window.addAliasItem = function(groupIndex) {
         currentFrequencyData = parseFrequencyText(currentFrequency);
         document.getElementById('frequency-editor').value = currentFrequency;
     updateBackdrop('frequency-editor', 'frequency-backdrop');
+    debounceSaveFrequency();
         renderFrequencyPanel(currentFrequencyData);
     }
 }
@@ -2354,6 +2368,7 @@ window.removeAliasItem = function(groupIndex, itemIndex) {
         currentFrequencyData = parseFrequencyText(currentFrequency);
         document.getElementById('frequency-editor').value = currentFrequency;
     updateBackdrop('frequency-editor', 'frequency-backdrop');
+    debounceSaveFrequency();
         renderFrequencyPanel(currentFrequencyData);
     }
 }
@@ -3665,6 +3680,7 @@ window.updateToLatest = async function() {
             document.getElementById('frequency-editor').value = text;
             currentFrequency = text;
             syncFrequencyToUI();
+            debounceSaveFrequency();
         }
 
         saveToLocalStorage();
