@@ -3,7 +3,52 @@
 > **Purpose**: A self-hosted market intelligence portal that unifies three financial research tools behind a single localhost dashboard.
 > **Architect**: MelawiGide (retail trader, macOS ARM, DeepSeek API user)
 > **Stack**: Python 3.14 + Next.js 14 + Qt6 desktop + Apify scraping
-> **Last updated**: 2026-06-09
+> **Last updated**: 2026-06-09 (Changelog: see §12)
+
+---
+
+## 12. Changelog — 2026-06-09
+
+### Phase 6 — Hub Proxy Fix (CRITICAL)
+**`hub_server.py`** — Added `do_POST` handler + CA API POST/GET passthrough:
+- `proxy_post()` function added to forward POST requests with 60s timeout
+- `do_POST()` routes to CA API endpoints: `/api/research`, `/api/advisor`, `/api/insider`
+- `do_GET()` now catches `/api/*` (non-hub-status) and proxies to `:3000`
+- **Root cause**: CA loaded through `:9000/ca/` iframe could GET the page, but any POST to `/api/research` or `/api/advisor` hit the hub server which had no POST handler. Settings appeared to "not save" because the key was saved (localStorage) but API calls silently failed through the proxy.
+
+### Phase 2 — Settings Save Feedback
+**`chokepoint-atlas/components/SettingsPanel.tsx`** — Added "Saved!" confirmation:
+- Save button shows a green "Saved!" checkmark for 800ms before closing
+- Gives explicit visual feedback that settings persisted
+
+### Phase 3 — Sector Rotation Cron Fix
+**Hermes cron `d07f46d8d031`** — Two changes:
+- Removed `browser` toolset (was `["web", "browser", "terminal"]` → `["web", "terminal"]`). Cron context has no headless browser — `web` tool does the same research via curl/API.
+- Pinned model to `deepseek-v4-flash`/`deepseek` provider (was unset — inherited default, which could change)
+- Next verification: scheduled 15:30 ET today
+
+### Phase 5 — Insider-Tracker Enhancement
+**`chokepoint-atlas/app/api/insider/route.ts`** — Rewrote with:
+- **POST endpoint** (`/api/insider`) for async refresh with request body
+- **Lockfile** (`.insider-scan.lock`) prevents concurrent runs, returns cached data if busy
+- **Timeout** increased from 45s → 150s (SEC EDGAR scraping is slow)
+- **`maxBuffer`** increased from 1MB → 10MB
+
+**`chokepoint-atlas/components/InsiderPanel.tsx`** — Added:
+- **AI mode toggle** — blue "AI" button next to "Scan Now" that sends DeepSeek key from settings for narrative analysis (POST with `deepseekKey`)
+- On/off visual state for the AI button
+- Locked-state handling (shows "Scan already running" instead of silent fail)
+- Loads settings from localStorage (same pattern as RoboAdvisor)
+
+### Services Running (as of now)
+| Service | Port | Status |
+|---------|------|--------|
+| Hub Portal | :9000 | ✅ Running |
+| TrendRadar | :8080 | ✅ Running |
+| Chokepoint Atlas | :3000 | ✅ Running |
+| Sector Rotation | cron | 🔄 Pending (next 15:30 ET) |
+| Stock Basket | cron | ✅ Working (last run today) |
+| Twitter Intel | cron | ⛔ Skipped per user request |
 
 ---
 
