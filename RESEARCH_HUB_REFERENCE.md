@@ -9,46 +9,48 @@
 
 ## 12. Changelog — 2026-06-09
 
-### Phase 6 — Hub Proxy Fix (CRITICAL)
+### Phase 6 — Hub Proxy Fix (CRITICAL — the real fix)
 **`hub_server.py`** — Added `do_POST` handler + CA API POST/GET passthrough:
-- `proxy_post()` function added to forward POST requests with 60s timeout
+- `proxy_post()` function added to forward POST requests with 180s timeout
 - `do_POST()` routes to CA API endpoints: `/api/research`, `/api/advisor`, `/api/insider`
 - `do_GET()` now catches `/api/*` (non-hub-status) and proxies to `:3000`
-- **Root cause**: CA loaded through `:9000/ca/` iframe could GET the page, but any POST to `/api/research` or `/api/advisor` hit the hub server which had no POST handler. Settings appeared to "not save" because the key was saved (localStorage) but API calls silently failed through the proxy.
+- **Root cause of "settings not saving"**: CA loaded through `:9000/ca/` iframe. The key saved fine to localStorage. But any POST to `/api/research` or `/api/advisor` hit the hub server which had no POST handler. Calls silently died. User saw no result after entering key → assumed it didn't save.
+- Proxy does NOT log request bodies — no secrets-in-logs risk
 
-### Phase 2 — Settings Save Feedback
-**`chokepoint-atlas/components/SettingsPanel.tsx`** — Added "Saved!" confirmation:
-- Save button shows a green "Saved!" checkmark for 800ms before closing
-- Gives explicit visual feedback that settings persisted
+### Phase 2 — Settings Save Feedback (cosmetic, not a fix)
+- Added green "Saved!" confirmation for 800ms on settings save
+- Accepted: this is cosmetic theater on top of the proxy fix. The bug was never that save failed — all saves worked. The bug was that subsequent API calls through the proxy failed silently. The checkmark adds visual feedback but was never the real fix.
 
-### Phase 3 — Sector Rotation Cron Fix
-**Hermes cron `d07f46d8d031`** — Two changes:
-- Removed `browser` toolset (was `["web", "browser", "terminal"]` → `["web", "terminal"]`). Cron context has no headless browser — `web` tool does the same research via curl/API.
-- Pinned model to `deepseek-v4-flash`/`deepseek` provider (was unset — inherited default, which could change)
-- Next verification: scheduled 15:30 ET today
+### Phase 3 — Sector Rotation Cron
+- **Hypothesis (not yet confirmed)**: removed `browser` toolset from `["web", "browser", "terminal"]` → `["web", "terminal"]`. Cron context may lack headless browser — the `web` tool handles the same research via curl/API.
+- Pinned model to `deepseek-v4-flash`/`deepseek`
+- **Pending verification**: 15:30 ET today — check exit status AND Telegram receipt
 
-### Phase 5 — Insider-Tracker Enhancement
-**`chokepoint-atlas/app/api/insider/route.ts`** — Rewrote with:
-- **POST endpoint** (`/api/insider`) for async refresh with request body
-- **Lockfile** (`.insider-scan.lock`) prevents concurrent runs, returns cached data if busy
-- **Timeout** increased from 45s → 150s (SEC EDGAR scraping is slow)
-- **`maxBuffer`** increased from 1MB → 10MB
+### Phase 5 — Insider-Tracker via Proxy
+**`hub_server.py`** — proxy_post timeout raised from 60s → 180s (was killing insider scans that run >60s through proxy while Python script kept running behind it — lockfile would persist, next click returned "scan already running")
+**`chokepoint-atlas/app/api/insider/route.ts`**:
+- POST endpoint with lockfile
+- **Stale lockfile handling**: locks older than 5 min are treated as stale and auto-cleared
+- Timeout increased from 45s → 150s
+- `maxBuffer` increased from 1MB → 10MB
+**`InsiderPanel.tsx`**: AI mode toggle, lockfile-aware messaging
 
-**`chokepoint-atlas/components/InsiderPanel.tsx`** — Added:
-- **AI mode toggle** — blue "AI" button next to "Scan Now" that sends DeepSeek key from settings for narrative analysis (POST with `deepseekKey`)
-- On/off visual state for the AI button
-- Locked-state handling (shows "Scan already running" instead of silent fail)
-- Loads settings from localStorage (same pattern as RoboAdvisor)
+### Phase 4 — Twitter Cron Paused (was not in original plan)
+- Twitter cron `b10a7e0d7e9f` explicitly **paused** — was still running every 4h erroring, burning Apify credits. "Skipped" meant skipped the fix; the job stayed live. Now paused until user decides on the volume/cost question.
 
-### Services Running (as of now)
-| Service | Port | Status |
-|---------|------|--------|
-| Hub Portal | :9000 | ✅ Running |
-| TrendRadar | :8080 | ✅ Running |
-| Chokepoint Atlas | :3000 | ✅ Running |
-| Sector Rotation | cron | 🔄 Pending (next 15:30 ET) |
-| Stock Basket | cron | ✅ Working (last run today) |
-| Twitter Intel | cron | ⛔ Skipped per user request |
+### Verification Results (run through :9000 proxy, not direct :3000)
+
+| Test | Result | Notes |
+|------|--------|-------|
+| Hub page renders | ✅ 200 | |
+| CA loads through proxy | ✅ 200 | |
+| Insider GET through proxy | ✅ 200 | Returns 17 trades |
+| Advisor POST through proxy | ✅ 500 | Expected — fake key used for test, proves POST routing works |
+| Insider data accessible | ✅ 17 trades | Top: NVDA score=85 |
+| Proxy body logging | ✅ None | No `print`/`log` of request bodies |
+| Sector Rotation cron | 🔄 Next: 15:30 ET | |
+| Stock Basket cron | ✅ Last ran today 14:02 | |
+| Twitter Intel cron | ⛔ PAUSED | Explicitly paused to stop billing |
 
 ---
 
@@ -370,19 +372,24 @@ cd ~/Downloads/chokepoint-atlas && python3 insider-tracker.py
 
 ---
 
-## 10. Roadmap / Pain Points (for Claude to Orchestrate)
+## 10. Pain Points / Roadmap Status
 
-### Critical Fixes Needed
-1. **Twitter cron keeps failing** — debug Apify auth/credits, check error logs
-2. **Chokepoint Atlas settings bug** — DeepSeek API key input not saving/persisting
-3. **Twitter feed showing 0 tweets** — scraper runs but produces empty results
-4. **Sector Rotation Watch cron error** — needs debug on what's failing
+### ✅ Resolved
+1. **Chokepoint Atlas settings bug (proxy issue)** — Fixed: hub now has `do_POST` handler + CA API proxy passthrough. Key saves to localStorage correctly; API calls through `:9000/ca/` now reach `:3000`. [Phase 6, 2026-06-09]
+2. **Hub proxy timeout killing insider scans** — Fixed: proxy_post timeout raised 60s → 180s. Lockfile now handles stale locks (>5 min auto-cleared). [Phase 5 fixup, 2026-06-09]
+3. **Insider-tracker API integration** — Added POST endpoint, lockfile, AI mode toggle, stale lock handling. Working through proxy. [Phase 5, 2026-06-09]
+4. **Settings UX feedback** — Added "Saved!" confirmation on settings save. [Phase 2, 2026-06-09]
+5. **Twitter cron still burning credits** — Explicitly paused. Not skipped; paused. [Phase 4, 2026-06-09]
 
-### Improvements Desired
-5. **Chokepoint Atlas to GitHub** — create remote repo, push local code
-6. **Better Chokepoint Atlas UI** — the tab is functional but ugly/buggy
-7. **Integrate insider-tracker.py output** into the Chokepoint Atlas UI
-8. **Startup reminder cron** — a daily notification to start the hub if it's down
+### 🔄 In Progress
+6. **Sector Rotation Watch cron error** — Hypothesis: `browser` toolset failing in cron context. Removed browser, pinned model. **Pending verification at 15:30 ET today** — check exit status AND Telegram receipt. [Phase 3, 2026-06-09]
+7. **Twitter pipeline (Apify credits exhausted)** — H1 confirmed: $6.21/$5.00 free tier spent. Cron paused. Needs user decision on: shrink to free tier, RSS substitution, or accept paid tier. [Phase 1 diagnostic done, awaiting decision]
+
+### ⏳ Not Started
+8. **Chokepoint Atlas to GitHub** — .gitignore updated, secret scan clean. Skipped per user request.
+9. **Startup reminder / launchd** — Not started.
+10. **Proxy/UI cosmetic pass** — Not started (structural proxy fix complete).
+11. **CA InsiderPanel — AI-mode end-to-end DeepSeek narrative test** — POST routing confirmed. Actual narrative output requires real API key test.
 
 ---
 
