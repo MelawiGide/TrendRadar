@@ -388,7 +388,7 @@ cd ~/Downloads/chokepoint-atlas && python3 insider-tracker.py
 
 ### ⏳ Not Started
 8. **Chokepoint Atlas to GitHub** — .gitignore updated, secret scan clean. Skipped per user request.
-9. **Startup reminder / launchd** — Not started.
+9. **Startup persistence — launchd auto-start** — `com.melawigide.researchhub` launchd service installed. Auto-starts hub + TrendRadar + CA on login. KeepAlive with auto-restart. Survives reboots and session changes. No more manual restarts. [Phase 7, 2026-06-09]
 10. **Proxy/UI cosmetic pass** — Not started (structural proxy fix complete).
 11. **CA InsiderPanel — AI-mode end-to-end DeepSeek narrative test** — POST routing confirmed. Actual narrative output requires real API key test.
 
