@@ -10,10 +10,10 @@
 ## 12. Changelog — 2026-06-09
 
 ### Phase 6 — Hub Proxy Fix (CRITICAL — the real fix)
-**`hub_server.py`** — Added `do_POST` handler + CA API POST/GET passthrough:
-- `proxy_post()` function added to forward POST requests with 180s timeout
-- `do_POST()` routes to CA API endpoints: `/api/research`, `/api/advisor`, `/api/insider`
-- `do_GET()` now catches `/api/*` (non-hub-status) and proxies to `:3000`
+**`hub_server.py`** — Three changes:
+- Added `do_POST` handler + CA API POST passthrough
+- Added `/_next/*` → `:3000` proxy route for Next.js static chunks (was the real reason CA showed a blank loading spinner through :9000 — the HTML loaded, but all JavaScript assets at `/_next/static/...` 404'd because the hub only proxied `/ca/*` and `/api/*`, not `/_next/*`)
+- `proxy_post()` timeout raised from 60s → 180s
 - **Root cause of "settings not saving"**: CA loaded through `:9000/ca/` iframe. The key saved fine to localStorage. But any POST to `/api/research` or `/api/advisor` hit the hub server which had no POST handler. Calls silently died. User saw no result after entering key → assumed it didn't save.
 - Proxy does NOT log request bodies — no secrets-in-logs risk
 
@@ -43,7 +43,8 @@
 | Test | Result | Notes |
 |------|--------|-------|
 | Hub page renders | ✅ 200 | |
-| CA loads through proxy | ✅ 200 | |
+| CA loads through proxy (HTML) | ✅ 200 | Was stuck on loading spinner — JS chunks 404ing |
+| Next.js assets through proxy | ✅ 200 | Added `/_next/*` → `:3000` proxy routing — was the missing piece |
 | Insider GET through proxy | ✅ 200 | Returns 17 trades |
 | Advisor POST through proxy | ✅ 500 | Expected — fake key used for test, proves POST routing works |
 | Insider data accessible | ✅ 17 trades | Top: NVDA score=85 |
