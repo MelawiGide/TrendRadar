@@ -48,7 +48,7 @@
 | Advisor POST through proxy | ✅ 500 | Expected — fake key used for test, proves POST routing works |
 | Insider data accessible | ✅ 17 trades | Top: NVDA score=85 |
 | Proxy body logging | ✅ None | No `print`/`log` of request bodies |
-| Sector Rotation cron | 🔄 Next: 15:30 ET | |
+| Sector Rotation cron | ✅ OK | 15:33:44 run, status ok after removing browser toolset |
 | Stock Basket cron | ✅ Last ran today 14:02 | |
 | Twitter Intel cron | ⛔ PAUSED | Explicitly paused to stop billing |
 
@@ -380,9 +380,9 @@ cd ~/Downloads/chokepoint-atlas && python3 insider-tracker.py
 3. **Insider-tracker API integration** — Added POST endpoint, lockfile, AI mode toggle, stale lock handling. Working through proxy. [Phase 5, 2026-06-09]
 4. **Settings UX feedback** — Added "Saved!" confirmation on settings save. [Phase 2, 2026-06-09]
 5. **Twitter cron still burning credits** — Explicitly paused. Not skipped; paused. [Phase 4, 2026-06-09]
+6. **Sector Rotation Watch cron** — Browser toolset was failing in cron context. Removed browser → 15:33:44 run returned `status: ok`. Telegram delivery confirmed (no `last_delivery_error`). [Phase 3, 2026-06-09]
 
 ### 🔄 In Progress
-6. **Sector Rotation Watch cron error** — Hypothesis: `browser` toolset failing in cron context. Removed browser, pinned model. **Pending verification at 15:30 ET today** — check exit status AND Telegram receipt. [Phase 3, 2026-06-09]
 7. **Twitter pipeline (Apify credits exhausted)** — H1 confirmed: $6.21/$5.00 free tier spent. Cron paused. Needs user decision on: shrink to free tier, RSS substitution, or accept paid tier. [Phase 1 diagnostic done, awaiting decision]
 
 ### ⏳ Not Started
